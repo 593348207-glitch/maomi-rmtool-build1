@@ -11,7 +11,7 @@ jobs:
       - name: Restore source
         run: |
           mkdir -p project
-          base64 --decode source.zip.b64 > source.zip
+          base64 -D source.zip.b64 > source.zip
           unzip -q source.zip -d project
       - name: Install dependencies
         run: brew install ldid dpkg make
