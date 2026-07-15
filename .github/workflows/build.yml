@@ -1,0 +1,38 @@
+name: Build RMTool DEB
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore source
+        run: |
+          mkdir -p project
+          base64 --decode source.zip.b64 > source.zip
+          unzip -q source.zip -d project
+      - name: Install dependencies
+        run: brew install ldid dpkg make
+      - name: Install Theos
+        run: |
+          git clone --recursive https://github.com/theos/theos.git "$HOME/theos"
+          mkdir -p "$HOME/theos/sdks"
+          ln -s "$(xcrun --sdk iphoneos --show-sdk-path)" "$HOME/theos/sdks/iPhoneOS.sdk"
+          echo "THEOS=$HOME/theos" >> "$GITHUB_ENV"
+      - name: Build rootful
+        working-directory: project
+        run: |
+          make clean package FINALPACKAGE=1
+          mkdir -p artifacts
+          cp packages/*.deb artifacts/RMTool-rootful.deb
+      - name: Build rootless
+        working-directory: project
+        run: |
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          cp packages/*.deb artifacts/RMTool-rootless.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RMTool-DEB-iOS15
+          path: project/artifacts/*.deb
